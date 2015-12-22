@@ -47,3 +47,4 @@ Temporary Items
 .apdisk
 bin/sf/http/HTTPManager$1.class
 *.class
+/bin/

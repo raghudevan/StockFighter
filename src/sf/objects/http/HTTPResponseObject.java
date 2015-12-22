@@ -1,14 +1,12 @@
-package sf.http;
-
-import java.util.HashMap;
+package sf.objects.http;
 
 public class HTTPResponseObject 
 {
 	private int responseCode;
-	private HashMap<String, Object> response;
+	private Object response;
 	
 	public HTTPResponseObject(int responseCode,
-			HashMap<String, Object> response) 
+			Object response) 
 	{
 		this.responseCode = responseCode;
 		this.response = response;
@@ -17,7 +15,7 @@ public class HTTPResponseObject
 	public int getResponseCode() {
 		return responseCode;
 	}
-	public HashMap<String, Object> getResponse() {
+	public Object getResponse() {
 		return response;
 	}
 }

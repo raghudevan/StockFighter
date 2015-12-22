@@ -1,16 +1,35 @@
 package sf.main;
 
-import sf.resources.Utils;
+import sf.objects.http.HTTPRequestObject.Order;
+import sf.objects.http.HTTPRequestObject.Order.ORDER_TYPE;
+import sf.utilities.StockFighterUtils;
 
 
 public class Nexus {
 
 	public static void main(String[] args) 
 	{
+		StockFighterUtils sfUtils = StockFighterUtils.getInstance();
 		
-		//String url = "http://www.google.com/search?q=raghudevan";
-		Utils.getInstance().getAPIState();
+		sfUtils.isAPIAlive();
+		System.out.println("--------------------");
+		
+		sfUtils.isVenueAlive();
+		System.out.println("--------------------");
+		
+		System.out.println(sfUtils.listStocks("TESTEX"));
+		System.out.println("--------------------");
+		
+		Order o = new Order("account", "TESTEX", "FOOBAR",
+				2500, 100, "buy", ORDER_TYPE.LIMIT);
+		sfUtils.placeOrder(o);
+		System.out.println("--------------------");
+		
+//		Order o = new Order("TESTEX", "FOOBAR");
+//		sfUtils.getOrderBook(o);
+//		System.out.println("--------------------");
 		
 	}
+	
 
 }
