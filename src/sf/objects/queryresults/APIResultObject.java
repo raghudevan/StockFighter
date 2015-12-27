@@ -13,13 +13,11 @@ public class APIResultObject {
 		return ok;
 	}
 
-	public APIResultObject(Boolean ok) 
-	{
+	public APIResultObject(Boolean ok) {
 		this.ok = ok;
 	}
 	
-	public APIResultObject(Boolean ok, String error)
-	{
+	public APIResultObject(Boolean ok, String error) {
 		this.ok = ok;
 		this.error = error;
 	}

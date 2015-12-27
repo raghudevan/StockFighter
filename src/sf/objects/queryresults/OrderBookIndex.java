@@ -9,8 +9,7 @@ public class OrderBookIndex extends APIResultObject {
 	public ArrayList<String> getSymbols() {
 		
 		ArrayList<String> symbolList = new ArrayList<String>();
-		for(Stock stock : symbols)
-		{
+		for(Stock stock : symbols) {
 			symbolList.add(stock.getSymbol());
 		}
 		
@@ -27,5 +26,4 @@ public class OrderBookIndex extends APIResultObject {
 		super(ok, error);
 		this.symbols = symbols;
 	}
-
 }

@@ -1,6 +1,5 @@
 package sf.utilities.http;
 
-import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -14,8 +13,8 @@ import com.google.gson.stream.JsonReader;
 
 import sf.constants.Constants;
 import sf.objects.http.HTTPRequestObject;
-import sf.objects.http.HTTPRequestObject.Order;
 import sf.objects.http.HTTPResponseObject;
+import sf.objects.queryresults.Order;
 
 public class HTTPManager 
 {
@@ -27,28 +26,27 @@ public class HTTPManager
 
 	/**
 	 * To make custom requests
+	 * The RequestObject will contain:
+	 * 1. The REQUEST_TYPE 
+	 * 2. An url(Against which the request is made)
+	 * 3. An order(parameters)
+	 * 4. The returnClass(the value object to reuturn as a response to the request)
 	 * **/
 	public enum REQUEST_TYPE {POST, GET};
-	protected HTTPResponseObject makeRequest(HTTPRequestObject hreqObj)
-	{
+	protected HTTPResponseObject makeRequest(HTTPRequestObject hreqObj) {
 		HTTPResponseObject hrespObj = null;
-		try 
-		{
+		try {
 			System.out.println(hreqObj.getRequestType() + ": " + hreqObj.getUrl());
 
-			if(hreqObj.getRequestType() == REQUEST_TYPE.GET)
-			{
+			if(hreqObj.getRequestType() == REQUEST_TYPE.GET) {
 				hrespObj = sendGET(hreqObj);
 			}
-			else
-			{
+			else {
 				hrespObj = sendPOST(hreqObj);
 			}
 			System.out.println("Response Code: " + hrespObj.getResponseCode());
 			System.out.println("Response Class: " + hrespObj.getResponse().getClass());
-		}
-		catch (IOException e) 
-		{
+		} catch (IOException e) {
 			System.out.println("Something went wrong with making the " + hreqObj.getRequestType()  + " request."
 					+ "\nMessage: " + e.getMessage()
 					+ "\nCause: " + e.getCause());
@@ -57,46 +55,23 @@ public class HTTPManager
 		return hrespObj;
 	}
 
-	private  HTTPResponseObject sendGET(HTTPRequestObject hreqObj) throws IOException
-	{
+	private  HTTPResponseObject sendGET(HTTPRequestObject hreqObj)
+			throws IOException {
 		URL link = new URL(hreqObj.getUrl());
 
 		HttpURLConnection huc = (HttpURLConnection) link.openConnection();
 		huc.setRequestMethod("GET");
 		huc.setRequestProperty("User-Agent", USER_AGENT);
 
-		int responseCode = huc.getResponseCode();
-
-		Object responseObject = null;
-		if(hreqObj.getClass() == null)
-		{
-			//pass a null return class to figure out what the keys in the response are
-			HashMap<String, Object> responseMap = 
-					new Gson().fromJson(new JsonReader(new InputStreamReader(huc.getInputStream())),
-							new TypeToken<HashMap<String, Object>>(){}.getType());
-
-			System.out.println("Keys: " + responseMap.keySet());
-		}
-		else
-		{
-			if(responseCode == 200)
-			{
-				responseObject = new Gson().fromJson(new JsonReader(new InputStreamReader(huc.getInputStream())),
-						hreqObj.getReturnClass());				
-			}
-			else
-			{
-				responseObject = new Gson().fromJson(new JsonReader(new InputStreamReader(huc.getErrorStream())),
-						hreqObj.getReturnClass());	
-			}
-		}
+		//construct a response
+		HTTPResponseObject hresObj = constructResponse(huc, hreqObj);
 
 		huc.disconnect();
-		return new HTTPResponseObject(responseCode, responseObject);
+		return hresObj;
 	}
 
-	private HTTPResponseObject sendPOST(HTTPRequestObject hreqObj) throws IOException
-	{
+	private HTTPResponseObject sendPOST(HTTPRequestObject hreqObj)
+			throws IOException {
 		URL link = new URL(hreqObj.getUrl());
 		Order parameters = hreqObj.getParameters();
 		String paramJSON = new Gson().toJson(parameters, Order.class);
@@ -121,23 +96,42 @@ public class HTTPManager
 		dos.flush();
 		dos.close();
 
-		//understanding the response
-		int responseCode = huc.getResponseCode();
+		//construct the response the response
+		HTTPResponseObject hresObj = constructResponse(huc, hreqObj);
 
-		BufferedReader br = new BufferedReader(new InputStreamReader(huc.getInputStream()));
-
-		StringBuilder sb = new StringBuilder();
-		while(br.ready())
-		{
-			sb.append(br.readLine());
-		}
-
-		br.close();
 		huc.disconnect();
 
-		String json = sb.toString();
+		return hresObj;
+	}
 
-		return new HTTPResponseObject(responseCode, json);
+	private HTTPResponseObject constructResponse(HttpURLConnection huc,
+			HTTPRequestObject hreqObj)
+					throws IOException {
+		Object responseObject = null;
+		int responseCode = huc.getResponseCode();
+
+		//pass a null return class to figure out what the keys in the response are
+		if(hreqObj.getReturnClass() == null) {
+			HashMap<String, Object> responseMap = 
+					new Gson().fromJson(new JsonReader(new InputStreamReader(huc.getInputStream())),
+							new TypeToken<HashMap<String, Object>>(){}.getType());
+
+			/*
+			 * return the key set so that that information may be used to
+			 * make a value object for this response type
+			 * */
+			responseObject = responseMap.keySet();
+		} else {
+			if(responseCode == 200) {
+				responseObject = new Gson().fromJson(new JsonReader(new InputStreamReader(huc.getInputStream())),
+						hreqObj.getReturnClass());				
+			} else {
+				responseObject = new Gson().fromJson(new JsonReader(new InputStreamReader(huc.getErrorStream())),
+						hreqObj.getReturnClass());	
+			}
+		}
+
+		return new HTTPResponseObject(responseCode, responseObject);
 	}
 }
 

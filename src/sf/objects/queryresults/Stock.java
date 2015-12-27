@@ -46,8 +46,7 @@ public class Stock {
 		return isBuy;
 	}
 	
-	public Stock(String name, String symbol) 
-	{
+	public Stock(String name, String symbol) {
 		this.name = name;
 		this.symbol = symbol;
 		
@@ -59,8 +58,7 @@ public class Stock {
 	
 	public Stock(long price,
 			Integer quantity,
-			Boolean isBuy)
-	{
+			Boolean isBuy) {
 		this.price = price;
 		this.qty = quantity;
 		this.isBuy = isBuy;

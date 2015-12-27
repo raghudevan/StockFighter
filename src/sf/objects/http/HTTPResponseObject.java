@@ -6,8 +6,7 @@ public class HTTPResponseObject
 	private Object response;
 	
 	public HTTPResponseObject(int responseCode,
-			Object response) 
-	{
+			Object response) {
 		this.responseCode = responseCode;
 		this.response = response;
 	}
@@ -15,6 +14,7 @@ public class HTTPResponseObject
 	public int getResponseCode() {
 		return responseCode;
 	}
+	
 	public Object getResponse() {
 		return response;
 	}
