@@ -2,6 +2,7 @@ package sf.utilities.http;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -47,9 +48,10 @@ public class HTTPManager
 			System.out.println("Response Code: " + hrespObj.getResponseCode());
 			System.out.println("Response Class: " + hrespObj.getResponse().getClass());
 		} catch (IOException e) {
-			System.out.println("Something went wrong with making the " + hreqObj.getRequestType()  + " request."
-					+ "\nMessage: " + e.getMessage()
-					+ "\nCause: " + e.getCause());
+			//			System.out.println("Something went wrong with making the " + hreqObj.getRequestType()  + " request."
+			//					+ "\nMessage: " + e.getMessage()
+			//					+ "\nCause: " + e.getCause());
+			hrespObj = new HTTPResponseObject(-1, e.getMessage());
 		}
 
 		return hrespObj;
@@ -62,6 +64,7 @@ public class HTTPManager
 		HttpURLConnection huc = (HttpURLConnection) link.openConnection();
 		huc.setRequestMethod("GET");
 		huc.setRequestProperty("User-Agent", USER_AGENT);
+		huc.setRequestProperty("X-Starfighter-Authorization", Constants.apiKey);
 
 		//construct a response
 		HTTPResponseObject hresObj = constructResponse(huc, hreqObj);
@@ -107,28 +110,30 @@ public class HTTPManager
 	private HTTPResponseObject constructResponse(HttpURLConnection huc,
 			HTTPRequestObject hreqObj)
 					throws IOException {
+		InputStream is = null;
 		Object responseObject = null;
 		int responseCode = huc.getResponseCode();
+		
+		if(responseCode == 200) {
+			is = huc.getInputStream();
+		} else {
+			is = huc.getErrorStream();
+		}
 
 		//pass a null return class to figure out what the keys in the response are
 		if(hreqObj.getReturnClass() == null) {
 			HashMap<String, Object> responseMap = 
-					new Gson().fromJson(new JsonReader(new InputStreamReader(huc.getInputStream())),
+					new Gson().fromJson(new JsonReader(new InputStreamReader(is)),
 							new TypeToken<HashMap<String, Object>>(){}.getType());
-
+			
 			/*
 			 * return the key set so that that information may be used to
 			 * make a value object for this response type
 			 * */
 			responseObject = responseMap.keySet();
 		} else {
-			if(responseCode == 200) {
-				responseObject = new Gson().fromJson(new JsonReader(new InputStreamReader(huc.getInputStream())),
-						hreqObj.getReturnClass());				
-			} else {
-				responseObject = new Gson().fromJson(new JsonReader(new InputStreamReader(huc.getErrorStream())),
-						hreqObj.getReturnClass());	
-			}
+			responseObject = new Gson().fromJson(new JsonReader(new InputStreamReader(is)),
+					hreqObj.getReturnClass());	
 		}
 
 		return new HTTPResponseObject(responseCode, responseObject);

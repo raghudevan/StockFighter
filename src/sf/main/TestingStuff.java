@@ -2,28 +2,53 @@ package sf.main;
 import sf.objects.queryresults.Order;
 import sf.objects.queryresults.Order.DIRECTION;
 import sf.objects.queryresults.Order.ORDER_TYPE;
+import sf.objects.queryresults.OrderResponse;
 import sf.utilities.StockFighterUtils;
+import sf.utilities.websocket.StockFighterWS;
 
 public class TestingStuff {
 
 	//TODO: Need to convert this into junit test cases
 	public TestingStuff() {
 		
+		String tickerTape = "wss://api.stockfighter.io/ob/api/ws/EXB123456/venues/TESTEX/tickertape";
+		StockFighterWS sfws = new StockFighterWS(tickerTape);
+		sfws.startListening("ListeningToWebsockerActivity", false);
+		
+		testBuyingAndSelling();
+	}
+	
+	public void testBuyingAndSelling() {
 		StockFighterUtils sfUtils = StockFighterUtils.getInstance();
 		Order o;
-
+		OrderResponse or;
+		
 		o = new Order("TESTEX", "FOOBAR");
 		sfUtils.getLastQuote(o);
 		System.out.println("--------------------");
 		
-		o = new Order("TESTEX", "FOOBAR", DIRECTION.sell,
-				"EXB123456", 0, 1, ORDER_TYPE.limit);
-		System.out.println(sfUtils.placeOrder(o));
+		Boolean shouldSell = Boolean.TRUE;
+		if(shouldSell) {
+			o = new Order("TESTEX", "FOOBAR", DIRECTION.sell,
+					"EXB123456", 2500000, 10, ORDER_TYPE.fok);
+			or = sfUtils.placeOrder(o);
+			System.out.println("Order ID: " + or.getId());
+			//sfUtils.getExistingOrderStatus(or);
+			System.out.println("--------------------");
+			
+//			sfUtils.cancelOrder(or);
+//			System.out.println("--------------------");
+		}
 		
-		o = new Order("TESTEX", "FOOBAR", DIRECTION.buy,
-				"EXB123456", 2500000, 3, ORDER_TYPE.limit);
-		System.out.println(sfUtils.placeOrder(o));
-		System.out.println("--------------------");
+		Boolean shouldBuy = Boolean.TRUE;
+		if(shouldBuy) {
+			o = new Order("TESTEX", "FOOBAR", DIRECTION.buy,
+					"EXB123456", 0, 11, ORDER_TYPE.ioc);
+			or = sfUtils.placeOrder(o);
+			System.out.println("Order ID: " + or.getId());
+			//sfUtils.getExistingOrderStatus(or);
+			System.out.println("--------------------");
+		}
 		
 		o = new Order("TESTEX", "FOOBAR", 
 				DIRECTION.buy, Boolean.TRUE);
@@ -36,6 +61,10 @@ public class TestingStuff {
 		o = sfUtils.getBestQuote(o);
 		System.out.println("Best price: " + o.getPrice());
 		System.out.println("Qty: " + o.getQuantity());
+		System.out.println("--------------------");
+		
+		o = new Order("TESTEX", "FOOBAR", "EXB123456"); //get all orders
+		sfUtils.getStatusOfAllOrders(o);
 		System.out.println("--------------------");
 	}
 	

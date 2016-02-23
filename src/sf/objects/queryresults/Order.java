@@ -53,6 +53,14 @@ public class Order extends APIResultObject {
 		this.venue = venue;
 		this.symbol = symbol;
 	}
+	
+	/*Get status of orders*/
+	public Order(String venue, String symbol, String account) {
+		super(Boolean.TRUE);
+		this.venue = venue;
+		this.symbol = symbol;
+		this.account = account;
+	}
 
 	/*In the context of a response*/
 	protected Order(Boolean ok, String error) {

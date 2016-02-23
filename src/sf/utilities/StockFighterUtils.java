@@ -13,7 +13,7 @@ import sf.objects.queryresults.Order.DIRECTION;
 import sf.objects.queryresults.OrderBookIndex;
 import sf.objects.queryresults.OrderPage;
 import sf.objects.queryresults.OrderResponse;
-import sf.utilities.errors.StockFighterError;
+import sf.objects.queryresults.OrderStatus;
 import sf.utilities.http.HTTPManager;
 
 public class StockFighterUtils extends HTTPManager {
@@ -97,15 +97,14 @@ public class StockFighterUtils extends HTTPManager {
 			if(!orderBook.containsKey(order.getSymbol()) || 
 					order.getShouldRehash()) {
 				//make the call to refresh the state of the orderBook
-				String url =
-						Constants.baseURL + "/venues/" +
-								order.getVenue() + "/stocks/" +
-								order.getSymbol();
-				
+				String url = Constants.baseURL +
+						"/venues/" + order.getVenue() +
+						"/stocks/" + order.getSymbol();
+
 				HTTPResponseObject hrespObj =
 						makeRequest(new HTTPRequestObject(REQUEST_TYPE.GET, url,
 								order, OrderPage.class));
-				
+
 				OrderPage op = (OrderPage) hrespObj.getResponse();
 				orderBook.put(order.getSymbol(), op);
 			} else {
@@ -113,16 +112,16 @@ public class StockFighterUtils extends HTTPManager {
 			}
 			requestedPartOfTheBook.put(order.getSymbol(), orderBook.get(order.getSymbol()));
 		}
-		
+
 		return requestedPartOfTheBook;
 	}
-	
+
 	public Order getBestQuote(Order order) {
 		ArrayList<Order> orders = new ArrayList<Order>();
 		orders.add(order);
-		
+
 		OrderPage op = getOrderBook(orders).get(order.getSymbol());
-		
+
 		if(order.getDirection() == DIRECTION.buy) {
 			order.setPrice(op.getBestBuy().getPrice());
 			order.setQuantity(op.getBestBuy().getQuantity());
@@ -130,44 +129,119 @@ public class StockFighterUtils extends HTTPManager {
 			order.setPrice(op.getBestSell().getPrice());
 			order.setQuantity(op.getBestSell().getQuantity());
 		}
-		
+
 		return order;
 	}
-	
+
 	/**
 	 * Places an order as specified by the input parameter order
 	 * OrderType: limit, market, fill-or-kill, immediate-or-cancel
-	 * @throws StockFighterError 
 	 * **/
-	public Boolean placeOrder(Order order) {
+	public OrderResponse placeOrder(Order order) {
+		System.out.println("Placing " + order.getDirection() + " order");
 		//construct the URL
-		String url = 
-				Constants.baseURL + "/venues/" + 
-						order.getVenue() + "/stocks/" +
-						order.getSymbol() + "/orders";
+		String url = Constants.baseURL +
+				"/venues/" + order.getVenue() +
+				"/stocks/" + order.getSymbol() +
+				"/orders";
 
 		HTTPResponseObject hrespObj =
 				makeRequest(new HTTPRequestObject(REQUEST_TYPE.POST, url, order,
 						OrderResponse.class));
-		
+
 		OrderResponse or = (OrderResponse) hrespObj.getResponse(); 
-		
-		return or.getOk();
+
+		return or;
 	}
-	
+
+	/**
+	 * Retrieves information about a stock from the last trade.
+	 * This is always information from the past!
+	 * **/
 	public Boolean getLastQuote(Order order) {
+		System.out.println("Getting last quote");
 		//construct the URL
-		String url = 
-				Constants.baseURL + "/venues/" + 
-						order.getVenue() + "/stocks/" +
-						order.getSymbol() + "/quote";
-		
+		String url = Constants.baseURL +
+				"/venues/" + order.getVenue() +
+				"/stocks/" + order.getSymbol() +
+				"/quote";
+
 		HTTPResponseObject hrespObj =
 				makeRequest(new HTTPRequestObject(REQUEST_TYPE.GET, url, order,
 						LastQuote.class));
-		
+
 		LastQuote lq = (LastQuote) hrespObj.getResponse();
-		
+
+		System.out.println("Asks depth: " + lq.getAskDepth());
+		System.out.println("Bids depth: " + lq.getBidDepth());
+
 		return lq.getOk();
+	}
+
+	public Boolean getExistingOrderStatus(OrderResponse orderResp) {
+		//construct the URL
+		String url = Constants.baseURL +
+				"/venues/" + orderResp.getVenue() +
+				"/stocks/" + orderResp.getSymbol() +
+				"/orders/" + orderResp.getId();
+
+		HTTPResponseObject hrespObj =
+				makeRequest(new HTTPRequestObject(REQUEST_TYPE.GET, url, orderResp,
+						OrderResponse.class));
+
+		OrderResponse or = (OrderResponse) hrespObj.getResponse();
+
+		if(or.getOk()) {
+			System.out.println("Still open: " + or.getOpen());
+			System.out.println("Filled    : " + or.getTotalFills());
+		}
+		return or.getOk();
+	}
+
+	public Boolean cancelOrder(OrderResponse orderResp) {
+		//construct the URL
+		String url = Constants.baseURL + 
+				"/venues/" + orderResp.getVenue() + 
+				"/stocks/" + orderResp.getSymbol() + 
+				"/orders/" + orderResp.getId() +
+				"/cancel";
+
+		HTTPResponseObject hrespObj =
+				makeRequest(new HTTPRequestObject(REQUEST_TYPE.POST, url, orderResp,
+						OrderResponse.class));
+
+		OrderResponse or = (OrderResponse) hrespObj.getResponse();
+
+		if(or.getOk()) {
+			System.out.println("Still open: " + or.getOpen());
+			System.out.println("Filled    : " + or.getTotalFills());
+		}
+
+		return or.getOk();
+	}
+
+	/**
+	 * Returns all the orders placed at the venue (optional - at stock level).
+	 * Bit of a risk since the results are not paginated
+	 *  - potentially a lot of incoming data
+	 * **/
+	public Boolean getStatusOfAllOrders(Order order) {
+		//construct the URL
+		String url =  Constants.baseURL +
+				"/venues/" + order.getVenue() +
+				"/accounts/" + order.getAccount() +
+				(order.getSymbol().equals("") ? "" : "/stocks/" + order.getSymbol()) +
+				"/orders"; 
+		
+		HTTPResponseObject hrespObj =
+				makeRequest(new HTTPRequestObject(REQUEST_TYPE.GET, url, order,
+						OrderStatus.class));
+
+		OrderStatus os = (OrderStatus) hrespObj.getResponse();
+		
+		System.out.println("Hot order count : " + os.getHotOrderCount());
+		System.out.println("Cold order count: " + os.getColdOrderCount());
+		
+		return os.getOk();
 	}
 }
